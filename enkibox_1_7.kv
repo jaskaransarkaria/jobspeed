@@ -1,0 +1,2685 @@
+#:kivy 1.10.0
+#:import CardTransition kivy.uix.screenmanager.CardTransition
+#:import RiseInTransition kivy.uix.screenmanager.RiseInTransition
+#:import SwapTransition kivy.uix.screenmanager.SwapTransition
+#:import FallOutTransition kivy.uix.screenmanager.FallOutTransition
+#:import FadeTransition kivy.uix.screenmanager.FadeTransition
+#:import WipeTransition kivy.uix.screenmanager.WipeTransition
+#:import hex kivy.utils.get_color_from_hex
+#:import Factory kivy.factory.Factory
+#:import date datetime.date
+#:import datetime datetime.datetime
+#:import time datetime.time
+#:import itemgetter operator.itemgetter
+#:import Factory kivy.factory.Factory
+
+
+<MySpinnerButton@Button>:
+    canvas.after:
+        Color:
+            rgba: 1, 1, 1, 1
+        Line:
+            width: 1
+            rectangle: self.x, self.y, self.width, self.height
+    #background_normal: 'transparent.png'
+    #background_down: 'transparent.png'
+
+<MySpinnerOption@SpinnerOption>
+    canvas.after:
+        Color:
+            rgba: 1, 1, 1, 1
+        Line:
+            width: 2
+            rectangle: self.x, self.y, self.width, self.height
+    padding: (10, 10)
+    background_normal: 'transparrent_dark_label.png'
+    background_down: 'transparrent_dark_label.png'
+
+<MySpinner@Spinner>:
+    canvas.after:
+        Color:
+            rgba: 1, 1, 1, 1
+        Line:
+            width: 1
+            rectangle: self.x, self.y, self.width, self.height
+    padding: (10, 10)
+    background_normal: 'transparent.png'
+    option_cls: Factory.MySpinnerOption
+
+<DeleteBubble@Bubble>:
+    size_hint: (None, 0.08)
+    size: self.size
+    BubbleButton:
+        text: 'Delete Job'
+        on_release: Factory.AreYouSure().open()
+        on_release: app.root.remove_bubble()
+        on_release: app.delete_job_num = app.job
+
+<UploadCancel@Upload>:
+    source: 'cancel.ico'
+
+<UploadPopup@Upload>:
+
+<FileChooser@Popup>:
+    title: "Select up to 3 images to upload to this SubJob"
+    size_hint: 0.6, 0.8
+    on_dismiss: app.touch_flag = False
+    on_dismiss: app.temp_subjob = 0
+    BoxLayout:
+        label: label
+        orientation: 'vertical'
+        FileChooserListView:
+            id: filechooserlist
+            filters: ['*.jpg', '*.png']
+            multiselect: True
+            rootpath: app.home_dir
+            on_selection: root.select(*args)
+            on_selection: label.text = app.root.format_selected_files(self.selection[-3:])
+
+        BoxLayout:
+            size_hint_y: 0.2
+            canvas.before:
+                Color:
+                    rgb: hex('#D35400') #1,.5,.4
+                Rectangle:
+                    pos: self.pos
+                    size: self.size
+            Label:
+                id: label
+                size_hint_y: 1
+                text: "[b]Files to upload ({}/3): ".format(app.num_existing_img)
+                markup: True
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint: 0.1, 1
+                Label:
+                UploadPopup:
+                    size_hint: 1.25, 1.25
+                    on_touch_up: if app.touch_flag: root.dismiss()
+                Label:
+            BoxLayout:
+                orientation: 'vertical'
+                size_hint: 0.1, 1
+                Label:
+                UploadCancel:
+                    size_hint: 1.25, 1.25
+                    source: 'cancel.ico'
+                    on_touch_up: if app.touch_flag: root.dismiss()
+                Label:
+            BoxLayout:
+                size_hint: 0.05, 1
+
+<ResendNotePopup@Popup>:
+    auto_dismiss: False
+    title: "Are You sure you want to re-send a notification to the customer? \n(n.b The customer will automatically be informed when 'Overall Status'¬ changes and when the job is created) "
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    BoxLayout:
+        spacing: 10
+        Button:
+            canvas.after:
+                Color:
+                    rgba: 1, 1, 1, 1
+                Line:
+                    width: 1
+                    rectangle: self.x, self.y, self.width, self.height
+            background_normal: ''
+            background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+            text: "Yes."
+            on_release: root.dismiss()
+            on_release: app.root.resend_note()
+            size_hint: 0.5, 0.79
+        Button:
+            canvas.after:
+                Color:
+                    rgba: 1, 1, 1, 1
+                Line:
+                    width: 1
+                    rectangle: self.x, self.y, self.width, self.height
+            background_normal: ''
+            background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+            text: "No"
+            on_release: root.dismiss()
+            size_hint: 0.5, 0.79
+
+
+<IncorrectCredentials@Popup>:
+    auto_dismiss: False
+    title: "The login details you entered are incorrect. Remember credentials are CAPS sensitive!"
+    title_align: 'center'
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    Button:
+        canvas.after:
+            Color:
+                rgba: 1, 1, 1, 1
+            Line:
+                width: 1
+                rectangle: self.x, self.y, self.width, self.height
+        background_normal: ''
+        background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]#[0,0,0,0.35]
+        text: "Ok."
+        on_release: root.dismiss()
+        size_hint: 1, 0.85
+
+<UploadLimit@Popup>:
+    auto_dismiss: False
+    title: "The image upload limit has been reached for this subjob. Please remove an old image to add another."
+    title_align: 'center'
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    Button:
+        canvas.after:
+            Color:
+                rgba: 1, 1, 1, 1
+            Line:
+                width: 1
+                rectangle: self.x, self.y, self.width, self.height
+        background_normal: ''
+        background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+        text: "Ok."
+        on_release: root.dismiss()
+        size_hint: 1, 0.85
+
+
+<CannotSMS@Popup>:
+    auto_dismiss: False
+    title: "The SMS failed to be sent. The contact number is incorrect."
+    title_align: 'center'
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    Button:
+        canvas.after:
+            Color:
+                rgba: 1, 1, 1, 1
+            Line:
+                width: 1
+                rectangle: self.x, self.y, self.width, self.height
+        background_normal: ''
+        background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+        text: "Ok."
+        on_release: root.dismiss()
+        size_hint: 1, 0.85
+
+
+<BlackListed@Popup>:
+    auto_dismiss: False
+    title: "This user's account has been temporarily frozen due to concurrent logins from the same account."
+    title_align: 'center'
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    Button:
+        canvas.after:
+            Color:
+                rgba: 1, 1, 1, 1
+            Line:
+                width: 1
+                rectangle: self.x, self.y, self.width, self.height
+        background_normal: ''
+        background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+        text: "Ok."
+        on_release: root.dismiss()
+        size_hint: 1, 0.85
+
+<SessionInvalid@Popup>:
+    auto_dismiss: False
+    title_align: 'center'
+    title: "Your session is invalid, someone else is using your login details. Please wait before attempting login again..."
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    Button:
+        canvas.after:
+            Color:
+                rgba: 1, 1, 1, 1
+            Line:
+                width: 1
+                rectangle: self.x, self.y, self.width, self.height
+        background_normal: ''
+        background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+        text: "Ok."
+        on_release: root.dismiss()
+        size_hint: 1, 0.85
+
+<CannotConnect@Popup>:
+    auto_dismiss: False
+    title_align: 'center'
+    title: "There is a problem connecting to the server, please check you internet connection and try again"
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    Button:
+        canvas.after:
+            Color:
+                rgba: 1, 1, 1, 1
+            Line:
+                width: 1
+                rectangle: self.x, self.y, self.width, self.height
+        background_normal: ''
+        background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+        text: "Ok."
+        on_release: root.dismiss()
+        size_hint: 1, 0.85
+
+
+<AreYouSure@Popup>:
+    id: areyousurepopup
+    auto_dismiss: False
+    title: "Are You sure you want to permanently delete job number " + app.delete_job_num + "?"
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    BoxLayout:
+        spacing: 10
+        Button:
+            canvas.after:
+                Color:
+                    rgba: 1, 1, 1, 1
+                Line:
+                    width: 1
+                    rectangle: self.x, self.y, self.width, self.height
+            background_normal: ''
+            background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+            text: "Yes."
+            on_release: root.dismiss()
+            on_release: app.root.delete_job_number()
+            size_hint: 0.5, 0.79
+        Button:
+            canvas.after:
+                Color:
+                    rgba: 1, 1, 1, 1
+                Line:
+                    width: 1
+                    rectangle: self.x, self.y, self.width, self.height
+            background_normal: ''
+            background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+            text: "No"
+            on_release: root.dismiss()
+            size_hint: 0.5, 0.79
+
+<ChargeZeroPop@Popup>:
+    auto_dismiss: False
+    title: u"You are charging \u00a30.00 in a field, are you sure you want to charge this?"
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    BoxLayout:
+        spacing: 10
+        Button:
+            canvas.after:
+                Color:
+                    rgba: 1, 1, 1, 1
+                Line:
+                    width: 1
+                    rectangle: self.x, self.y, self.width, self.height
+            background_normal: ''
+            background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+            text: "Yes."
+            on_release: root.dismiss()
+            on_release: app.root.yes_but_charge_zero()
+            size_hint: 0.5, 0.79
+        Button:
+            canvas.after:
+                Color:
+                    rgba: 1, 1, 1, 1
+                Line:
+                    width: 1
+                    rectangle: self.x, self.y, self.width, self.height
+            background_normal: ''
+            background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+            text: "No, I need to edit that"
+            on_release: root.dismiss()
+            size_hint: 0.5, 0.79
+
+<MyPopUp@Popup>:
+    auto_dismiss: False
+    title_align: 'center'
+    title: "You have not filled in the required fields."
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    Button:
+        canvas.after:
+            Color:
+                rgba: 1, 1, 1, 1
+            Line:
+                width: 1
+                rectangle: self.x, self.y, self.width, self.height
+        background_normal: ''
+        background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+        text: "Ok, I will fill them in. Silly me."
+        on_release: root.dismiss()
+        size_hint: 1, 0.85
+
+<CreatePrompt@Popup>:
+    auto_dismiss: False
+    title: "Creating this job may notify the customer. Continue?"
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    BoxLayout:
+        spacing: 10
+        Button:
+            canvas.after:
+                Color:
+                    rgba: 1, 1, 1, 1
+                Line:
+                    width: 1
+                    rectangle: self.x, self.y, self.width, self.height
+            background_normal: ''
+            background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+            text: "Yes"
+            on_release: root.dismiss()
+            on_release: app.root.create_prompt_confirm()
+            size_hint: 0.5, 0.79
+
+        Button:
+            canvas.after:
+                Color:
+                    rgba: 1, 1, 1, 1
+                Line:
+                    width: 1
+                    rectangle: self.x, self.y, self.width, self.height
+            background_normal: ''
+            background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+            text: "No"
+            on_release: root.dismiss()
+            size_hint: 0.5, 0.79
+
+<EmailInvalid@Popup>:
+    auto_dismiss: False
+    title: "The email address invalid"
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    Button:
+        canvas.after:
+            Color:
+                rgba: 1, 1, 1, 1
+            Line:
+                width: 1
+                rectangle: self.x, self.y, self.width, self.height
+        background_normal: ''
+        background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+        text: "I will check it"
+        on_release: root.dismiss()
+        size_hint: 1, 0.79
+
+<DateInvalid@Popup>:
+    auto_dismiss: False
+    title_align: 'center'
+    title: "The Deadline date is invalid"
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    Button:
+        canvas.after:
+            Color:
+                rgba: 1, 1, 1, 1
+            Line:
+                width: 1
+                rectangle: self.x, self.y, self.width, self.height
+        background_normal: ''
+        background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+        text: "I will check it"
+        on_release: root.dismiss()
+        size_hint: 1, 0.79
+
+<ReadyForCollection@Popup>:
+    auto_dismiss: False
+    title: "Overall Status is Waiting for Collection; the customer may be notified. Do you wish to continue?"
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    BoxLayout:
+        spacing: 10
+        Button:
+            canvas.after:
+                Color:
+                    rgba: 1, 1, 1, 1
+                Line:
+                    width: 1
+                    rectangle: self.x, self.y, self.width, self.height
+            background_normal: ''
+            background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+            text: "yes"
+            on_release: root.dismiss()
+            on_release: app.ready_email == "No"
+            on_release: app.root.email_or_not_to_email()# email and switch to main screen behaviour here
+            size_hint: 0.5, 0.79
+        Button:
+            canvas.after:
+                Color:
+                    rgba: 1, 1, 1, 1
+                Line:
+                    width: 1
+                    rectangle: self.x, self.y, self.width, self.height
+            background_normal: ''
+            background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+            text: "no"
+            on_release: root.dismiss()
+            on_release: app.ready_email == "Yes"
+            size_hint: 0.5, 0.79
+
+<PendingPop@Popup>:
+    auto_dismiss: False
+    title_align: 'center'
+    title: "You have 'Pending' in a field. Fix this before you email the customer."
+    size_hint: 0.5, 0.2
+    separator_color: [47 / 255., 200 / 255., 162 / 255., 2.5]
+    Button:
+        canvas.after:
+            Color:
+                rgba: 1, 1, 1, 1
+            Line:
+                width: 1
+                rectangle: self.x, self.y, self.width, self.height
+        background_normal: ''
+        background_color: [47 / 255., 200 / 255., 162 / 255.,0.15]
+        size_hint: 1, 0.79
+        text: "Okay"
+        on_release: root.dismiss()
+
+<Upload@ButtonBehavior+Image>:
+    source: 'upload.ico'
+
+<Print@ButtonBehaviour+Image>:
+    source: 'printer_icon.ico'
+
+<BackToMain@ButtonBehaviour+Image>:
+    source: 'return.ico'
+
+<ResendNotification@ButtonBehaviour+Image>:
+    source: 'resend.ico' #00144D
+
+<CreateCustomerLayout@GridLayout>:
+    size_hint_x: 1
+    size_hint_y: None
+    height: self.minimum_height
+    row_default_height: 80
+    force_row_default: True
+    spacing: 10, 10
+    padding: 20, 10
+    cols: 1
+    rows: 4
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Customer Name[color=ff0000]*[/color][/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            AlphabetInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 2
+                        rectangle: self.x, self.y, self.width, self.height
+                id: create_customer_name
+                font_size: 20
+                background_color: [1, 1, 1, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text:  ''
+                write_tab: False
+                multiline: False
+                on_text: app.create_customer_name = self.text.title()
+                on_text: if self.text != "" and self.focus is True: app.root.auto_fill(self.text.title())
+                on_text: if self.text == '': app.suggestion_email = ''
+                on_text: if self.text == '': app.suggestion_contact_number = ''
+                suggestion_text: app.suggestion_name
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Contact Number[color=ff0000]*[/color][/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            BoxLayout:
+                orientation: 'horizontal'
+                CheckBox:
+                    active: False
+                    size_hint: 0.1, 1
+                    color: [8,8,8,1]
+                    spacing: 0, 5
+                    padding: 20, 0
+                    on_active: if self.active: app.phone_checked = True
+                    on_active: if self.active is False: app.phone_checked = False
+                PhoneInput:
+                    canvas.before:
+                        Color:
+                            rgba: 1, 1, 1, 1
+                        Line:
+                            width: 2
+                            rectangle: self.x, self.y, self.width, self.height
+                    id: create_contact_number
+                    font_size: 20
+                    background_color: [1, 1, 1, 0]
+                    foreground_color: [1,1,1,1]
+                    cursor_color: [1,1,1,1]
+                    text:  app.suggestion_contact_number
+                    input_filter: 'int'
+                    write_tab: False
+                    multiline: False
+                    on_text: app.create_contact_number = self.text
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Email[color=ff0000]*[/color][/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            BoxLayout:
+                orientation: 'horizontal'
+                CreateCheckBox:
+                    active: True
+                    size_hint: 0.1, 1
+                    color: [8,8,8,1] #[4,0.25,0,1.5]
+                    spacing: 0, 5
+                    padding: 20, 0
+                    on_active: if self.active: app.email_checked = True
+                    on_active: if self.active is False: app.email_checked = False
+                EmailInput:
+                    canvas.before:
+                        Color:
+                            rgba: 1, 1, 1, 1
+                        Line:
+                            width: 2
+                            rectangle: self.x, self.y, self.width, self.height
+                    id: create_email
+                    font_size: 20
+                    background_color: [1, 1, 1, 0]
+                    foreground_color: [1,1,1,1]
+                    cursor_color: [1,1,1,1]
+                    text: app.suggestion_email
+                    input_type: 'mail'
+                    write_tab: False
+                    multiline: False
+                    on_text: app.create_email = self.text
+                    on_text: if self.focus is True and self.text != "": app.root.auto_fill_email(self.text)
+                    suggestion_text: app.suggestion_suggestion_email
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Date of Order[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            TextInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 2
+                        rectangle: self.x, self.y, self.width, self.height
+                id: create_date_of_order
+                font_size: 20
+                background_color: [1, 1, 1, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: date.today().strftime("%d/%m/%y")
+                write_tab: False
+                multiline: False
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Deadline[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            DateInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 2
+                        rectangle: self.x, self.y, self.width, self.height
+                id: create_deadline
+                font_size: 20
+                background_color: [1, 1, 1, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: app.create_deadline
+                hint_text: 'dd/mm/yy'
+                write_tab: False
+                mulitline: False
+                on_text: app.create_deadline = self.text
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Deposit[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            MoneyInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 2
+                        rectangle: self.x, self.y, self.width, self.height
+                id: create_deposit
+                font_size: 20
+                background_color: [1, 1, 1, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: ''
+                hint_text: u'\u00a3'
+                input_filter: 'float'
+                write_tab: False
+                multiline: False
+                on_text: app.create_deposit = self.text
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Balance Due[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            TextInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 2
+                        rectangle: self.x, self.y, self.width, self.height
+                id: create_money_owed
+                font_size: 20
+                background_color: [1, 1, 1, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                hint_text: 'Pending'
+                input_filter: 'float'
+                write_tab: False
+                mulitline: False
+                readonly: True
+
+<CustomerLayout@GridLayout>:
+    size_hint_x: 1
+    size_hint_y: None
+    height: self.minimum_height
+    row_default_height: 80
+    force_row_default: True
+    spacing: 10, 10
+    padding: 20, 10
+    cols: 1
+    rows: 4
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            size_hint_x: 1
+            Label:
+                text: "[b]Customer Name[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            AlphabetInput:
+                id: customer_name
+                size_hint_y: 0.8
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 2
+                        rectangle: self.x, self.y, self.width, self.height
+                text: app.customer_name.title()
+                font_size: 20
+                #background_color: [69, 179, 157, 0]
+                background_color: [1, 1, 1, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                write_tab: False
+                multiline: False
+                on_text: app.root.compile_customer_info(int(app.job), "Customer Name", self.text.title())
+                on_text: app.customer_name = self.text.title()
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Contact Number[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+
+            BoxLayout:
+                orientation: 'horizontal'
+                CheckBox:
+                    active: app.phone_checked
+                    size_hint: 0.1, 1
+                    color: [8,8,8,1]
+                    spacing: 0, 5
+                    padding: 20, 0
+                    on_active: app.root.compile_customer_info(int(app.job), "phone_checked", self.active)
+                    on_active: if self.active: app.phone_checked = True
+                    on_active: if self.active is False: app.phone_checked = False
+                PhoneInput:
+                    canvas.before:
+                        Color:
+                            rgba: 1, 1, 1, 1
+                        Line:
+                            width: 2
+                            rectangle: self.x, self.y, self.width, self.height
+                    id: contact_number
+                    text: app.contact_number
+                    font_size: 20
+                    #background_color: [69, 179, 157, 0]
+                    background_color: [1, 1, 1, 0]
+                    foreground_color: [1,1,1,1]
+                    cursor_color: [1,1,1,1]
+                    input_filter: 'int'
+                    write_tab: False
+                    multiline: False
+                    on_text: app.root.compile_customer_info(int(app.job), "Contact Number", self.text)
+                    on_text: app.contact_number = self.text
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                size_hint_x: 0.3
+                text: "[b]Email[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+
+            BoxLayout:
+                orientation: 'horizontal'
+                CheckBox:
+                    active: app.email_checked
+                    size_hint: 0.1, 1
+                    color: [8,8,8,1] #[4,0.25,0,1.5]
+                    spacing: 0, 5
+                    padding: 20, 0
+                    on_active: app.root.compile_customer_info(int(app.job), "email_checked", self.active)
+                    on_active: if self.active: app.email_checked = True
+                    on_active: if self.active is False: app.email_checked = False
+                EmailInput:
+                    canvas.before:
+                        Color:
+                            rgba: 1, 1, 1, 1
+                        Line:
+                            width: 2
+                            rectangle: self.x, self.y, self.width, self.height
+                    id: email
+                    text: app.email_add
+                    font_size: 20
+                    #background_color: [44, 154, 132, 0.25]
+                    background_color: [0, 0, 0, 0]
+                    foreground_color: [1, 1, 1, 1]
+                    cursor_color: [1,1,1,1]
+                    input_type: 'mail'
+                    write_tab: False
+                    multiline: False
+                    on_text: app.root.compile_customer_info(int(app.job), "Email", self.text)
+                    on_text: app.email_add = self.text
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Date of Order[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            TextInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 2
+                        rectangle: self.x, self.y, self.width, self.height
+                id: date_of_order
+                text: app.date_of_order
+                font_size: 20
+                #background_color: [44, 154, 132, 0.25]
+                background_color: [44, 154, 132, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                write_tab: False
+                multiline: False
+                on_text: app.root.compile_customer_info(int(app.job), "Date of Order", self.text)
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Deadline[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            DateInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 2
+                        rectangle: self.x, self.y, self.width, self.height
+                id: customer_deadline
+                text: app.customer_deadline
+                font_size: 20
+                #background_color: [44, 154, 132, 0.25]
+                background_color: [44, 154, 132, 0]
+                foreground_color: [1, 1, 1, 1]
+                cursor_color: [1,1,1,1]
+                hint_text: 'dd/mm/yy'
+                write_tab: False
+                mulitline: False
+                on_text: app.root.compile_customer_info(int(app.job), "Deadline", self.text)
+                on_text: app.customer_deadline = self.text
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Deposit[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            MoneyInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 2
+                        rectangle: self.x, self.y, self.width, self.height
+                id: deposit
+                text: app.customer_deposit
+                font_size: 20
+                #background_color: [44, 154, 132, 0.25]
+                background_color: [44, 154, 132, 0]
+                foreground_color: [1, 1, 1, 1]
+                cursor_color: [1,1,1,1]
+                hint_text: u'\u00a3'
+                input_filter: 'float'
+                write_tab: False
+                multiline: False
+                on_text: app.root.compile_customer_info(int(app.job), "Deposit", self.text)
+                on_text: app.customer_deposit = self.text
+                on_text: app.root.calculate_total_money_owed()
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Balance Due[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            TextInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 2
+                        rectangle: self.x, self.y, self.width, self.height
+                id: money_owed
+                text: app.customer_money_owed
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                hint_text: u'\u00a3'
+                input_filter: 'float'
+                write_tab: False
+                mulitline: False
+                readonly: True
+                on_text: app.root.compile_customer_info(int(app.job), "Total Money Owed", self.text)
+                on_text: app.customer_money_owed = self.text
+
+
+
+<FirstSubJobTable@GridLayout>:
+    canvas:
+        Color:
+            rgba: [1, 1, 1, 1]
+        Line:
+            width: 1
+            rectangle: self.x + 10, self.y, self.width - 20, self.height
+    id: 1
+    size_hint_x: 1
+    size_hint_y: None
+    cols: 1
+    rows: 5
+    height: 440
+    row_default_height: 80
+    row_force_default: True
+    spacing: 0, 5
+    padding: 20, 0
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Sub-Job 1 [/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                spacing: 10, 0
+                markup: True
+            Label:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                text: "[b] " + app.subjob_dict[1]['Repair/ Commission'] + "[/b]"
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+                font_size: 20
+                markup: True
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Status[/b]"
+                font_size: 25
+                markup: True
+            MySpinner:
+                values: ["Work In Progress", "Waiting for Collection", "Returned"]
+                font_size: 20
+                text: app.subjob_dict[1]['Status']
+                on_text: app.root.compile_temp_dict_entry(int(app.job), 1, "Status", self.text)
+                on_text: app.root.compile_overall_status(int(app.job))
+                on_text: app.root.open_ready()
+                #on_text: app.root.which_list(app.subjob_dict[1]['Status'], self.text)
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Job Description[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            JobDescInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                text: app.subjob_dict[1]['Job Description']
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                write_tab: False
+                multiline: False
+                on_text: app.root.compile_temp_dict_entry(int(app.job), 1, "Job Description", self.text)
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Metal[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            TextInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: app.subjob_dict[1]['Metal']
+                write_tab: False
+                multiline: False
+                on_text: app.root.compile_temp_dict_entry(int(app.job), 1, "Metal", self.text)
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Stones[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            TextInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: app.subjob_dict[1]['Stones']
+                write_tab: False
+                multiline: False
+                on_text: app.root.compile_temp_dict_entry(int(app.job), 1, "Stones", self.text)
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Estimated Cost[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            MoneyInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: app.subjob_dict[1]['Estimated Cost']
+                hint_text: u'\u00a3'
+                write_tab: False
+                multiline: False
+                on_text: app.root.compile_temp_dict_entry(int(app.job), 1, "Estimated Cost", self.text)
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Actual Cost[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            MoneyInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: app.subjob_dict[1]['Actual Cost']
+                hint_text: u'\u00a3'
+                write_tab: False
+                multiline: False
+                on_text: app.root.compile_temp_dict_entry(int(app.job), 1, "Actual Cost", self.text)
+                on_text: app.subjob_dict[1]['Actual Cost'] = self.text
+                on_text: app.root.calculate_total_money_owed()
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Image/s[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            BoxLayout:
+                orientation: 'horizontal'
+                Image_Gallery:
+        BoxLayout:
+            BoxLayout:
+                orientation: 'vertical'
+                Label:
+                    text: "[b]Add Subjob[/b]"
+                    font_size: 25
+                    text_size: self.size
+                    halign: 'left'
+                    markup: True
+                AddSubjob:
+                    source: 'add.ico'
+
+
+<SubJobTable@GridLayout>:
+    canvas:
+        Color:
+            rgba: [1, 1, 1, 1]
+        Line:
+            width: 1
+            rectangle: self.x + 10, self.y, self.width - 20, self.height
+    size_hint_x: 1
+    size_hint_y: None
+    cols: 1
+    rows: 5
+    height: 440
+    row_default_height: 80
+    row_force_default: True
+    spacing: 0, 5
+    padding: 20, 0
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Sub-Job " + str(self.parent.parent.parent.id) + " [/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            Label:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                text: "[b] " + app.subjob_dict[int(self.parent.parent.parent.id)]['Repair/ Commission'] + "[/b]"
+                font_size: 20
+                text_size: self.size
+                halign: 'left'
+                valign: 'middle'
+                markup: True
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Status[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            MySpinner:
+                values: ["Work In Progress", "Waiting for Collection", "Returned"]
+                font_size: 20
+                text: app.subjob_dict[int(self.parent.parent.parent.id)]['Status']
+                on_text: app.root.compile_temp_dict_entry(int(app.job), int(self.parent.parent.parent.id), "Status", self.text)
+                on_text: app.root.compile_overall_status(int(app.job))
+                on_text: app.root.open_ready()
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Job Description[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            JobDescInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: app.subjob_dict[int(self.parent.parent.parent.id)]['Job Description']
+                write_tab: False
+                multiline: False
+                on_text: app.root.compile_temp_dict_entry(int(app.job), int(self.parent.parent.parent.id), "Job Description", self.text)
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Metal[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            TextInput:
+                text: app.subjob_dict[int(self.parent.parent.parent.id)]['Metal']
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                write_tab: False
+                multiline: False
+                on_text: app.root.compile_temp_dict_entry(int(app.job), int(self.parent.parent.parent.id), "Metal", self.text)
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Stones[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            TextInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: app.subjob_dict[int(self.parent.parent.parent.id)]['Stones']
+                write_tab: False
+                multiline: False
+                on_text: app.root.compile_temp_dict_entry(int(app.job), int(self.parent.parent.parent.id), "Stones", self.text)
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Estimated Cost[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            MoneyInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: app.subjob_dict[int(self.parent.parent.parent.id)]['Estimated Cost']
+                hint_text: u'\u00a3'
+                write_tab: False
+                multiline: False
+                on_text: app.root.compile_temp_dict_entry(int(app.job), int(self.parent.parent.parent.id), "Estimated Cost", self.text)
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Actual Cost[/b]"
+                text_size: self.size
+                halign: 'left'
+                font_size: 25
+                markup: True
+            MoneyInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: app.subjob_dict[int(self.parent.parent.parent.id)]['Actual Cost']
+                hint_text: u'\u00a3'
+                write_tab: False
+                multiline: False
+                on_text: app.root.compile_temp_dict_entry(int(app.job), int(self.parent.parent.parent.id), "Actual Cost", self.text)
+                on_text: app.subjob_dict[int(self.parent.parent.parent.id)]['Actual Cost'] = self.text
+                on_text: app.root.calculate_total_money_owed()
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Image/s[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            BoxLayout:
+                orientation: 'horizontal'
+                Image_Gallery:
+        BoxLayout:
+            BoxLayout:
+                orientation: 'vertical'
+                Label:
+                    text: "[b]Add Subjob[/b]"
+                    font_size: 25
+                    text_size: self.size
+                    halign: 'left'
+                    markup: True
+                AddSubjob:
+                    source: 'add.ico'
+
+<CreateSubJobTable@GridLayout>:
+    canvas:
+        Color:
+            rgba: [1, 1, 1, 1]
+        Line:
+            width: 1
+            rectangle: self.x + 10, self.y, self.width - 20, self.height
+
+    size_hint_x: 1
+    size_hint_y: None
+    cols: 1
+    rows: 5
+    height: 440
+    row_default_height: 80
+    row_force_default: True
+    spacing: 0, 5
+    padding: 20, 0
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Sub-Job " + self.parent.parent.parent.id + "[color=ff0000]*[/color][/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            MySpinner:
+                text: "[b] --- select here --- [/b]"
+                font_size: 20
+                markup: True
+                on_text: app.create_subjob_dict[int(self.parent.parent.parent.id)]['Repair/ Commission'] = self.text
+                values: ["Repair", "Commission"]
+                on_text: app.create_repair_commission = self.text
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Status[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            MySpinner:
+                values: ["Work In Progress", "Waiting for Collection", "Returned"]
+                font_size: 20
+                text: "Work In Progress"
+                on_text: app.create_subjob_dict[int(self.parent.parent.parent.id)]['Status'] = self.text
+                on_text: app.root.compile_overall_status(int(self.parent.parent.parent.id))
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Job Description[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            JobDescInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: app.create_subjob_dict[int(self.parent.parent.parent.id)]['Job Description']
+                write_tab: False
+                multiline: False
+                on_text: app.create_subjob_dict[int(self.parent.parent.parent.id)]['Job Description'] = self.text
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Metal[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            TextInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: app.create_subjob_dict[int(self.parent.parent.parent.id)]['Metal']
+                write_tab: False
+                multiline: False
+                on_text: app.create_subjob_dict[int(self.parent.parent.parent.id)]['Metal'] = self.text
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Stones[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            TextInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: app.create_subjob_dict[int(self.parent.parent.parent.id)]['Stones']
+                write_tab: False
+                multiline: False
+                on_text: app.create_subjob_dict[int(self.parent.parent.parent.id)]['Stones'] = self.text
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Estimated Cost[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            MoneyInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: app.create_subjob_dict[int(self.parent.parent.parent.id)]['Estimated Cost']
+                hint_text: u'\u00a3'
+                write_tab: False
+                multiline: False
+                on_text: app.create_subjob_dict[int(self.parent.parent.parent.id)]['Estimated Cost'] = self.text
+
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Actual Cost[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            TextInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: ''
+                hint_text: 'Pending'
+                write_tab: False
+                multiline: False
+                readonly: True
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        padding: 20, 0
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Image/s[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            BoxLayout:
+                orientation: 'horizontal'
+                Image_Gallery:
+        BoxLayout:
+            BoxLayout:
+                orientation: 'vertical'
+                Label:
+                    text: "[b]Add Subjob[/b]"
+                    font_size: 25
+                    text_size: self.size
+                    halign: 'left'
+                    markup: True
+                CreateAddSubjob:
+                    source: 'add.ico'
+            BoxLayout:
+                orientation: 'vertical'
+                Label:
+                    text: "[b]Delete Subjob[/b]"
+                    font_size: 25
+                    text_size: self.size
+                    halign: 'left'
+                    markup: True
+                CreateDeleteSubjob:
+                    source: 'minus.ico'
+
+<SearchSubJobTable@GridLayout>:
+    size_hint_x: 1
+    size_hint_y: None
+    cols: 2
+    rows: 7
+    height: 300
+    row_default_height: 30
+    row_force_default: True
+    spacing: 0, 5
+    padding: 20, 0
+
+    Label:
+        text: "[b]Sub-Job " + str(self.parent.id) + " [/b]"
+        font_size: 30
+        height: 50
+        spacing: 10, 0
+        markup: True
+    Label:
+        text: "[b]" + app.search_subjob_dict[int(self.parent.id)]['Repair/ Commission'] + "[/b]"
+        font_size: 30
+        markup: True
+    Label:
+        text: "[b]Job Description[/b]"
+        font_size: 30
+        markup: True
+    Label:
+        text: app.search_subjob_dict[int(self.parent.id)]['Job Description'][:39] + " ..."
+    Label:
+        text: "[b]Metal[/b]"
+        font_size: 30
+        markup: True
+    Label:
+        text: app.search_subjob_dict[int(self.parent.id)]['Metal']
+    Label:
+        text: "[b]Stones[/b]"
+        font_size: 30
+        markup: True
+    Label:
+        text: app.search_subjob_dict[int(self.parent.id)]['Stones']
+    Label:
+        text: "[b]Estimated Cost[/b]"
+        font_size: 30
+        markup: True
+    Label:
+        text: app.search_subjob_dict[int(self.parent.id)]['Estimated Cost']
+    Label:
+        text: "[b]Actual Cost[/b]"
+        font_size: 30
+        markup: True
+    Label:
+        text: app.search_subjob_dict[int(self.parent.id)]['Actual Cost']
+    Label:
+        text: "[b]Status[/b]"
+        font_size: 30
+        markup: True
+    Label:
+        text: app.search_subjob_dict[int(self.parent.id)]['Status']
+
+<EditAddSubJobTable@GridLayout>:
+    canvas:
+        Color:
+            rgba: [1, 1, 1, 1]
+        Line:
+            width: 1
+            rectangle: self.x + 10, self.y, self.width - 20, self.height
+
+    size_hint_x: 1
+    size_hint_y: None
+    cols: 1
+    rows: 5
+    height: 440
+    row_default_height: 80
+    row_force_default: True
+    spacing: 0, 5
+    padding: 20, 0
+
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Sub-Job " + self.parent.parent.parent.id + " [/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                spacing: 10, 0
+                markup: True
+            MySpinner:
+                text: "[b] -- select here -- [/b]"
+                font_size: 20
+                markup: True
+                on_text: app.edit_subjob_dict[int(self.parent.parent.parent.id)]['Repair/ Commission'] = self.text
+                on_text: app.root.wrap_update_table(int(app.job), "Repair/ Commission", self.text, int(self.parent.parent.parent.id))
+                values: ["Repair", "Commission"]
+
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Status[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            MySpinner:
+                values: ["Work In Progress", "Waiting for Collection", "Returned"]
+                font_size: 20
+                text: "Work In Progress"
+                on_text: app.edit_subjob_dict[int(self.parent.parent.parent.id)]['Status'] = self.text
+                on_text: app.root.wrap_update_table(int(app.job), "Status", self.text, int(self.parent.parent.parent.id))
+                on_text: app.root.compile_overall_status(int(app.job))
+                on_text: app.root.open_ready()
+
+    BoxLayout:
+        orientation: 'horizontal'
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Job Description[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            JobDescInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: ''
+                write_tab: False
+                multiline: False
+                on_text: app.edit_subjob_dict[int(self.parent.parent.parent.id)]['Job Description'] = self.text
+                on_text: app.root.wrap_update_table(int(app.job), "Job Description", self.text, int(self.parent.parent.parent.id))
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Metal[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            TextInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: ''
+                write_tab: False
+                multiline: False
+                on_text: app.edit_subjob_dict[int(self.parent.parent.parent.id)]['Metal'] = self.text
+                on_text: app.root.wrap_update_table(int(app.job), "Metal", self.text, int(self.parent.parent.parent.id))
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Stones[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            TextInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: ''
+                write_tab: False
+                multiline: False
+                on_text: app.edit_subjob_dict[int(self.parent.parent.parent.id)]['Stones'] = self.text
+                on_text: app.root.wrap_update_table(int(app.job), "Stones", self.text, int(self.parent.parent.parent.id))
+
+    BoxLayout:
+        orientation: 'horizontal'
+        spacing: 40
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Estimated Cost[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            MoneyInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: ''
+                hint_text: u'\u00a3'
+                write_tab: False
+                multiline: False
+                on_text: app.edit_subjob_dict[int(self.parent.parent.parent.id)]['Estimated Cost'] = self.text
+                on_text: app.root.edit_add_subjob_format_currency(int(self.parent.parent.parent.id), 'Estimated Cost', self.text)
+                on_text: app.root.wrap_update_table(int(app.job), "Estimated Cost", self.text, int(self.parent.parent.parent.id))
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Actual Cost[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            MoneyInput:
+                canvas.before:
+                    Color:
+                        rgba: 1, 1, 1, 1
+                    Line:
+                        width: 1
+                        rectangle: self.x, self.y, self.width, self.height
+                font_size: 20
+                background_color: [69, 179, 157, 0]
+                foreground_color: [1,1,1,1]
+                cursor_color: [1,1,1,1]
+                text: ''
+                hint_text: u'\u00a3'
+                write_tab: False
+                multiline: False
+                on_text: app.edit_subjob_dict[int(self.parent.parent.parent.id)]['Actual Cost'] = self.text
+                on_text: app.subjob_dict[int(self.parent.parent.parent.id)]['Actual Cost'] = self.text
+                on_text: app.root.wrap_update_table(int(app.job), "Actual Cost", self.text, int(self.parent.parent.parent.id))
+                on_text: app.root.calculate_total_money_owed()
+                on_text: app.root.edit_add_subjob_format_currency(int(self.parent.parent.parent.id), 'Actual Cost', self.text)
+
+    BoxLayout:
+        orientation: 'horizontal'
+        BoxLayout:
+            orientation: 'vertical'
+            Label:
+                text: "[b]Image/s[/b]"
+                font_size: 25
+                text_size: self.size
+                halign: 'left'
+                markup: True
+            BoxLayout:
+                orientation: 'horizontal'
+                Image_Gallery:
+        BoxLayout:
+            BoxLayout:
+                orientation: 'vertical'
+                Label:
+                    text: "[b]Add Subjob[/b]"
+                    font_size: 25
+                    text_size: self.size
+                    halign: 'left'
+                    markup: True
+                AddSubjob:
+                    source: 'add.ico'
+            BoxLayout:
+                orientation: 'vertical'
+                Label:
+                    text: "[b]Delete Subjob[/b]"
+                    font_size: 25
+                    text_size: self.size
+                    halign: 'left'
+                    markup: True
+                DeleteSubjob:
+                    source: 'minus.ico'
+
+<SelectableLabel>:
+    # Draw a background to indicate selection
+    canvas.before:
+        #Color:
+            #rgba: hex('#D35400') if self.selected else hex('#0E6655')
+        Color:
+            rgba: 1, 1, 1, 1
+        Line:
+            width: 2
+            rectangle: self.x, self.y, self.width, self.height
+        Rectangle:
+            pos: self.pos
+            size: self.size
+            source: 'dark_label.jpg' if self.selected else 'transparent.png'
+
+    canvas.after:
+        #Color:
+            #rgba: hex('#D35400') if self.selected else hex('#0E6655')
+        Color:
+            rgba: 1, 1, 1, 1
+        Line:
+            width: 2
+            rectangle: self.x, self.y, self.width, self.height
+
+
+<CustomRv@RecycleView>:
+    viewclass: 'SelectableLabel'
+    SelectableRecycleBoxLayout:
+
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: False
+
+<TodoRv@RV_Todo>:
+    id: the_todo_rv
+    viewclass: 'SelectableLabel'
+    SelectableRecycleBoxLayout:
+        spacing: 10
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: False
+
+<WaitingRv@RV_Waiting_For_Collection>:
+
+    viewclass: 'SelectableLabel'
+    SelectableRecycleBoxLayout:
+        spacing: 10
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: False
+
+<ReturnedRv@RV_Returned>:
+    viewclass: 'SelectableLabel'
+    SelectableRecycleBoxLayout:
+        spacing: 10
+        default_size_hint: 1, None
+        size_hint_y: None
+        height: self.minimum_height
+        orientation: 'vertical'
+        multiselect: False
+        touch_multiselect: False
+
+<CustomWidget@BoxLayout>:
+    # Draw a background to indicate selection
+    canvas:
+        Color:
+            rgba: 0,0,0,0 #hex('#16A085')
+        Rectangle:
+            pos: self.pos
+            size: self.size
+<Todo>:
+
+    glayout: glayout
+
+    canvas.before:
+        Color:
+            rgba: hex('#45B39D')
+        Rectangle:
+            # self here refers to the widget i.e BoxLayout
+            pos: self.pos
+            size: self.size
+
+    MyScreenManager:
+        id: _screen_manager
+        transition: SwapTransition()
+        Login:
+            canvas.before:
+                Rectangle:
+                    # self here refers to the widget i.e BoxLayout
+                    pos: self.pos
+                    size: self.size
+                    source: 'login.jpg'
+            name: 'login'
+            id: login
+            BoxLayout:
+                orientation: 'vertical'
+                Label:
+                    size_hint: 1, 0.4
+                BoxLayout:
+                    orientation: 'horizontal'
+                    Label:
+                        size_hint: 0.07, 1
+                    Label:
+                        size_hint: 0.5, 1
+                        text: '[b]JobSpeed.[/b]'
+                        font_size: self.width / 3
+                        font_name: 'jobspeedfont'
+                        markup: True
+                    Label:
+                        size_hint: 0.04, 1
+                    Image:
+                        source: 'enki_icon.ico'
+                        size_hint: 0.1, 0.95
+
+                BoxLayout:
+                    orientation: 'vertical'
+                    Label:
+                        size_hint: 1, 0.5
+
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        padding: 0, 5
+                        Label:
+                            size_hint_x: 1.3
+                        TextInput:
+                            canvas.before:
+                                Color:
+                                    rgba: 1, 1, 1, 1
+                                Line:
+                                    points: self.x, self.y + 25, self.x + self.width -100, self.y + 25
+                                    width: 1
+                            id: username_text
+                            hint_text: 'Username...'
+                            size_hint: 1, 0.88
+                            multiline: False
+                            write_tab: False
+                            background_color: [69, 179, 157, 0]
+                            foreground_color: [1,1,1,1]
+                            cursor_color: [1,1,1,1]
+                            font_size: self.height/ 2
+                            on_text: app.username = self.text
+                        Label:
+                    BoxLayout:
+                        orientation: 'horizontal'
+                        padding: 0, 5
+                        Label:
+                            size_hint_x: 1.3
+                        TextInput:
+                            id: passwurd_attempt_text
+                            hint_text: 'Password...'
+                            size_hint: 1, 0.88
+                            multiline: False
+                            text_size: self.size
+                            canvas.before:
+                                Color:
+                                    rgba: 1, 1, 1, 1
+                                Line:
+                                    points: self.x, self.y + 25, self.x + self.width - 100, self.y + 25
+                                    width: 1
+                            background_color: [69, 179, 157, 0]
+                            foreground_color: [1,1,1,1]
+                            cursor_color: [1,1,1,1]
+                            on_text: app.passwurd_attempt = self.text
+                            on_text_validate: app.root.logging_in()
+                            #on_text_validate: _screen_manager.current = 'main'
+                            #on_text_validate: app.what_screen = 'main'
+                            password: True
+                            font_size: self.height/ 2
+                        Label:
+                Label:
+                    size_hint: 1, 0.66
+
+        Main:
+            canvas.before:
+                Rectangle:
+                    # self here refers to the widget i.e BoxLayout
+                    pos: self.pos
+                    size: self.size
+                    source: 'main.jpg'
+
+            name: 'main'
+            on_enter: app.return_to_create = False
+            on_enter: app.temp_subjob = 0
+            on_enter: searchbar.text = ''
+            on_enter: app.what_screen = 'main'
+
+            BoxLayout:
+                on_touch_down: app.root.remove_bubble()
+                orientation: "vertical"
+                padding: 3, 3
+
+                TextInput:
+                    id: searchbar
+                    canvas.before:
+                        Color:
+                            rgba: 1, 1, 1, 1
+                        Line:
+                            points: self.x, self.y + 10, self.x + self.width -100, self.y + 10
+                            width: 1
+
+                    background_color: [69, 179, 157, 0]
+                    foreground_color: [1,1,1,1]
+                    cursor_color: [1,1,1,1]
+                    padding: 3, 0
+                    text: ''
+                    hint_text: "Search... Use #JobNumber, keyword or phrase"
+                    multiline: False
+                    font_size: self.parent.height / 25
+                    pos_hint: {"x": 0, "y": 1}
+                    size_hint: 0.75, 0.1
+
+                    on_text_validate: app.root.search_all(self.text) #shortcut means I don't have to define on_enter behaviour
+                    on_text_validate: _screen_manager.current = 'search'
+                    on_text_validate: app.what_screen = 'search'
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint: 1, 0.2
+                    Label:
+                        id: todo_label_num
+                        size_hint: 1, 0.5
+                        pos_hint: {"x": 0.3, "y": 0.2}
+                        text: "[b]To do:      " + app.num_todo +"[/b]"
+                        font_size: 50
+                        markup: True
+                        halign: 'left'
+                        valign: 'top'
+
+                    Label:
+                        size_hint: 0.7, 0.5
+                        pos_hint: {"x": 0.6, "y": 0.2}
+                        text: "[b]Collection[/b]"
+                        font_size: 50
+                        markup: True
+                        halign: 'left'
+                        valign: 'top'
+
+                    Label:
+                        size_hint: 1, 0.5
+                        pos_hint: {"x": 0, "y": 0.2}
+                        text: "[b]Returned[/b]"
+                        font_size: 50
+                        markup: True
+                        halign: 'left'
+                        valign: 'top'
+
+                BoxLayout:
+                    orientation: "horizontal"
+
+                    Label:
+                        size_hint: 0.12, None
+
+                    CustomWidget:
+                        id: cuswid_rv_todo
+                        padding: 10, 0
+                        spacing: 0, 10
+                        TodoRv:
+                            id: todorv
+                            data: [{'text': " {} | #{}   {:>20}".format( x[1], x[0], x[2]), 'text_size': self.size, 'halign': 'center', 'valign': 'center', 'font_size': self.width* 0.09, 'height': self.parent.height * 0.16} for x in root.todo_list_rv_root]
+                    Label:
+                        size_hint: 0.07, None
+
+                    CustomWidget:
+                        id: cuswid_rv_waiting_for_collection
+                        padding: 10, 0
+                        spacing: 0, 10
+                        WaitingRv:
+                            id: waitingrv
+                            data: [{'text': " {} | #{}   {:>20} ".format( x[1], x[0], x[2]), 'text_size': self.size, 'halign': 'center', 'valign': 'center', 'font_size': self.width* 0.09, 'height': self.parent.height * 0.16} for x in root.waiting_for_collection]
+
+                    Label:
+                        size_hint: 0.07, None
+
+                    CustomWidget:
+                        id: cuswid_rv_returned
+                        padding: 10, 0
+                        spacing: 0, 10
+                        ReturnedRv:
+                            id: returnedrv
+                            data: [{'text': " {} | #{}   {:>20}".format( x[1], x[0], x[2]), 'text_size': self.size, 'halign': 'center', 'valign': 'center', 'font_size': self.width* 0.09, 'height': self.parent.height * 0.16} for x in root.returned]
+
+                    Label:
+                        size_hint: 0.12, None
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint_y: 0.2
+                    padding: 10, 20
+
+                    AddressButton:
+                        source: 'address_book_white.ico'
+                        background_color: [69, 179, 157, 0]
+                        foreground_color: [1,1,1,1]
+                        cursor_color: [1,1,1,1]
+                        padding: 3, 3
+                        #text: "[b]get email[/b]"
+                        markup: True
+                        font_size: 18
+                        size_hint: 0.125, 0.9
+                        on_release: _screen_manager.current = 'get_email'
+                        on_release: what_screen = 'get_email'
+                        on_release: app.root.get_email_adds()
+                        #background_normal: ''
+                        #background_color: hex('#0E6655')
+
+                        #canvas.before:
+                            #Color:
+                                #rgba: hex('#D35400')
+                            #Rectangle:
+                                #size: self.size
+                                #pos: self.x + 3, self.y + 5
+                        #canvas.after:
+                            #Color:
+                                #rgba: 1, 1, 1, 1
+                            #Line:
+                                #width: 1.5
+                                #ellipse: self.x, self.y, self.width, self.height
+
+                    #Label:
+                        #size_hint: 0.008, None
+
+                    DeleteButton:
+                        padding: 3, 3
+                        source: 'discard_white.ico'
+                        size_hint: 0.6, 0.6
+                        background_color: [69, 179, 157, 0]
+                        foreground_color: [1,1,1,1]
+                        cursor_color: [1,1,1,1]
+                        markup: True
+                        font_size: 18
+                        size_hint: 0.125, 0.9
+                        #background_normal: ''
+                        #background_color: hex('#0E6655')
+                        on_release: _screen_manager.current = 'delete_job'
+                        on_release: what_screen = 'delete_job'
+
+                        #canvas.before:
+                            #Color:
+                                #rgba: hex('#D35400')
+                            #Rectangle:
+                                #size: self.size
+                                #pos: self.x + 3, self.y + 5
+
+                        #canvas.after:
+                            #Color:
+                                #rgba: 1, 1, 1, 1
+                            #Line:
+                                #width: 1.5
+                                #ellipse: self.x, self.y, self.width, self.height
+
+                    Label:
+                        size_hint: 0.5, None
+
+                    CreateButton:
+                        source: 'create_white.ico'
+                        padding: 3, 3
+                        #text: "[b]Create[/b]"
+                        background_color: [69, 179, 157, 0]
+                        foreground_color: [1,1,1,1]
+                        cursor_color: [1,1,1,1]
+                        markup: True
+                        font_size: 22
+                        size_hint: 0.125, 0.9
+                        pos_hint: {"x": 1}
+                        on_release: _screen_manager.current = 'create'
+                        on_release: what_screen = 'create'
+
+                        on_release: app.root.load_create_customer_info()
+                        on_release: app.job = str(0)
+
+                        #canvas.after:
+                            #Color:
+                                #rgba: 1, 1, 1, 1
+                            #Line:
+                                #width: 1.5
+                                #ellipse: self.x, self.y, self.width, self.height
+
+                        #background_normal: ''
+                        #background_color: hex('#0E6655')
+
+                        #canvas.before:
+                            #Color:
+                                #rgba: hex('#D35400')
+                            #Rectangle:
+                                #size: self.size
+                                #pos: self.x + 3, self.y + 5
+
+
+        Edit:
+            id: edit
+            name: 'edit'
+            on_pre_enter: app.root.load_customer_info()
+            on_pre_enter: app.what_screen = 'edit'
+            on_enter: app.current_job = int(app.job)
+            on_enter: app.load_mouse_icon()
+            canvas.before:
+                Rectangle:
+                    # self here refers to the widget i.e BoxLayout
+                    pos: self.pos
+                    size: self.size
+                    source: 'main.jpg'
+
+            ScrollView:
+                size: self.size
+
+                GridLayout:
+                    id: glayout
+                    cols: 1
+                    rows: app.edit_num_rows
+                    height: self.minimum_height #need to add a height and size_hint_y: None to each child manually
+                    size_hint_x: 1
+                    size_hint_y: None
+                    spacing: 50
+                    padding: 20, 0
+
+                    GridLayout:
+                        id: edit_customer_grid_buttons
+                        cols: 5
+                        rows: 1
+                        height: 50
+                        padding: 20
+                        spacing: 40
+                        size_hint_x: 1
+                        size_hint_y: None
+                        row_default_height: 50
+                        force_row_default: True
+
+                    GridLayout:
+                        id: customer_info_layout
+                        size_hint_x: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        row_default_height: 35
+                        force_row_default: True
+                        spacing: 0, 5
+                        padding: 0, 0
+                        cols: 2
+                        rows: 1
+
+                    GridLayout:
+                        id: glayout2
+                        spacing: 50
+                        cols: 1
+                        rows: app.glayout2_rows
+                        size_hint_x: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+
+        Create:
+            id: create
+            name: 'create'
+            on_enter: app.return_to_create = True
+            on_enter: app.create_num_rows = 1
+            on_enter: app.current_job = int(app.next_job_number)
+            on_enter: app.what_screen = 'create'
+
+            canvas.before:
+                Rectangle:
+                    # self here refers to the widget i.e BoxLayout
+                    pos: self.pos
+                    size: self.size
+                    source: 'main.jpg'
+            ScrollView:
+                size: self.size
+                GridLayout:
+                    id: create_customer_grid
+                    cols:1
+                    rows: app.create_main_rows
+                    height: self.minimum_height # need to add a height and size_hint_y: None to each child manually
+                    size_hint_x: 1
+                    size_hint_y: None
+                    spacing: 0, 50
+
+                    GridLayout:
+                        id: create_customer_grid_buttons
+                        cols: 2
+                        rows: 1
+                        height: 50
+                        padding: 20
+                        size_hint_x: 1
+                        size_hint_y: None
+                        row_default_height: 50
+                        force_row_default: True
+
+                    GridLayout:
+                        id: create_customer_info_layout
+                        size_hint_x: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        row_default_height: 35
+                        force_row_default: True
+                        spacing: 0, 5
+                        padding: 0, 0
+                        cols: 2
+                        rows: 1
+
+                    GridLayout:
+                        id: create_subjob
+                        size_hint_x: 1
+                        size_hint_y: None
+                        height: self.minimum_height
+                        row_default_height: 35
+                        force_row_default: True
+                        spacing: 0, 40
+                        padding: 0, 0
+                        cols: 1
+                        rows: app.create_num_rows
+
+        Search:
+            id: search
+            name: 'search'
+            canvas.before:
+                Rectangle:
+                    # self here refers to the widget i.e BoxLayout
+                    pos: self.pos
+                    size: self.size
+                    source: 'main.jpg'
+
+            BoxLayout:
+                orientation: 'vertical'
+                BoxLayout:
+                    orientation: 'horizontal'
+                    size_hint: 1, 0.1
+                    padding: 3, 3
+
+                    TextInput:
+                        id: searchbar2
+                        text: ''
+                        canvas.before:
+                            Color:
+                                rgba: 1, 1, 1, 1
+                            Line:
+                                points: self.x, self.y + 10, self.x + self.width -100, self.y + 10
+                                width: 1
+
+                        background_color: [69, 179, 157, 0]
+                        foreground_color: [1,1,1,1]
+                        cursor_color: [1,1,1,1]
+                        hint_text: "Search... Use #JobNumber"
+                        multiline: False
+                        font_size: self.parent.height / 2
+                        pos_hint: {"x": 1, "y": 0}
+                        size_hint: 0.75, 1
+                        on_text_validate: app.root.search_all(self.text)
+                        #shortcut means I don't have to define on_enter behaviour
+
+                    BackToMain:
+                        padding: 20
+                        pos_hint: {"x": 1, "y": 0}
+                        size_hint: 0.25, 1
+                        on_release: _screen_manager.current = 'main'
+                        on_release: searchbar.text = ''
+                        on_release: searchbar2.text = ''
+                        on_release: app.what_screen = 'main'
+
+                Label:
+                    size_hint: None, 0.1
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    Label:
+                        size_hint: 0.08, None
+
+                    CustomWidget:
+                        id: cuswid_rv_todo
+                        padding: 10, 0
+                        spacing: 0, 10
+                        size_hint: 0.5, 1
+                        TodoRv:
+                            id: search_rv
+
+                    ScrollView:
+                        size: self.size
+
+                        GridLayout:
+                            id: search_selected_grid
+                            cols:1
+                            rows: 2 #depends on how many sub jobs there are
+                            height: self.minimum_height # need to add height and size_hint_y: None to each child manually
+                            size_hint_x: 1
+                            size_hint_y: None
+                            spacing: 0, 50
+                            GridLayout:
+                                id: search_customer_info
+                                size_hint_x: 1
+                                size_hint_y: None
+                                height: self.minimum_height
+                                row_default_height: 35
+                                force_row_default: True
+                                spacing: 0, 5
+                                padding: 20, 0
+                                cols: 2
+                                rows: 9
+
+                                Label:
+                                    text: "[b]Job Number[/b]"
+                                    font_size: 30
+                                    markup: True
+                                Label:
+                                    text: "[b]" + app.job + "[/b]"
+                                    font_size: 30
+                                    markup: True
+                                    on_text: app.root.clear_search_subjobs()
+
+                                Label:
+                                    text: "[b]Date of Order[/b]"
+                                    font_size: 30
+                                    markup: True
+                                Label:
+                                    text: app.search_date_of_order
+
+                                Label:
+                                    text: "[b]Customer Name[/b]"
+                                    font_size: 30
+                                    markup: True
+                                Label:
+                                    text: app.search_customer_name
+                                    on_text: app.root.add_search_subjobs()
+                                Label:
+                                    text: "[b]Email[/b]"
+                                    font_size: 30
+                                    markup: True
+                                Label:
+                                    text: app.search_email_add
+                                Label:
+                                    text: "[b]Contact Number[/b]"
+                                    font_size: 30
+                                    markup: True
+                                Label:
+                                    text: app.search_contact_number
+
+                                Label:
+                                    text: "[b]Deposit[/b]"
+                                    font_size: 30
+                                    markup: True
+                                Label:
+                                    text: app.search_customer_deposit
+                                Label:
+                                    text: "[b]Balance Due[/b]"
+                                    font_size: 30
+                                    markup: True
+                                Label:
+                                    text: app.search_customer_money_owed
+                                Label:
+                                    text: "[b]Deadline[/b]"
+                                    font_size: 30
+                                    markup: True
+                                Label:
+                                    text: app.search_customer_deadline
+                                Label:
+                                    text: "[b]Overall Status[/b]"
+                                    font_size: 30
+                                    markup: True
+                                Label:
+                                    text: "[b]" + app.search_overall_status + "[/b]"
+                                    markup: True
+                                    font_size: self.parent.height * 0.07
+                            GridLayout:
+                                id: search_subjob_grid
+                                size_hint_x: 1
+                                size_hint_y: None
+                                height: self.minimum_height
+                                row_default_height: 35
+                                force_row_default: True
+                                spacing: 0, 0
+                                padding: 0, 0
+                                cols: 1
+                                rows: app.search_subjob_rows
+                Label:
+                    size_hint: None, 0.1
+
+        Get_email:
+            id: get_email
+            name: 'get_email'
+            canvas.before:
+                Rectangle:
+                    # self here refers to the widget i.e BoxLayout
+                    pos: self.pos
+                    size: self.size
+                    source: 'main.jpg'
+
+            BoxLayout:
+                orientation: 'vertical'
+                padding: 20, 20
+
+                BackToMain:
+                    size_hint: 1, 0.1
+                    pos_hint: {"x": 0, "y": "top"}
+                    on_release: _screen_manager.current = 'main'
+                    on_release: app.what_screen = 'main'
+                BoxLayout:
+                    orientation: 'horizontal'
+                    padding: 50, 50
+                    TextInput:
+                        canvas.before:
+                            Color:
+                                rgba: 1, 1, 1, 1
+                            Line:
+                                width: 1
+                                rectangle: self.x, self.y, self.width, self.height
+                        background_color: [69, 179, 157, 0]
+                        foreground_color: [1,1,1,1]
+                        cursor_color: [1,1,1,1]
+                        id: text_email_adds
+                        use_bubble: True
+                        readonly: True
+                        text: app.email_string
+                        size_hint: 1, 1
+                        text_validate_unfocus: False
+
+                Label:
+                    text: "Emails are automatically copied to your clipboard."
+                    font_size: self.width / 50
+                    size_hint: 1, 0.3
+
+        Delete_Job:
+            id: delete_job
+            name: 'delete_job'
+            canvas.before:
+                Rectangle:
+                    # self here refers to the widget i.e BoxLayout
+                    pos: self.pos
+                    size: self.size
+                    source: 'main.jpg'
+
+            BoxLayout:
+                orientation: 'vertical'
+                padding: 20, 20
+                BackToMain:
+                    size_hint: 1, 0.1
+                    pos_hint: {"x": 0, "y": "top"}
+                    on_release: _screen_manager.current = 'main'
+                    on_release: app.what_screen = 'main'
+
+                BoxLayout:
+                    orientation: 'horizontal'
+                    BoxLayout:
+                        orientation: 'vertical'
+                        Label:
+                            size_hint: 1, 0.6
+                        BoxLayout:
+                            orientation: 'horizontal'
+                            Label:
+                                size_hint: 0.3, 1
+                            PhoneInput:
+                                canvas.before:
+                                    Color:
+                                        rgba: 1, 1, 1, 1
+                                    Line:
+                                        width: 1
+                                        rectangle: self.x, self.y, self.width, self.height
+                                background_color: [69, 179, 157, 0]
+                                foreground_color: [1,1,1,1]
+                                cursor_color: [1,1,1,1]
+                                id: deleteinputtext
+                                hint_text: 'Input the job number you\nwish to permanently delete\nhere, then press enter.'
+                                multiline: False
+                                on_text_validate: self.text = ''
+                                on_text_validate: Factory.AreYouSure().open()
+                                on_text_validate: app.delete_job_num = self.text
+                                font_size: 32
+                                padding: 20, 0
+                            Label:
+                                size_hint: 0.3, 1
+                        Label:
+                            size_hint: 1, 0.8
+                Label:
+                    size_hint: 1, 0.3
